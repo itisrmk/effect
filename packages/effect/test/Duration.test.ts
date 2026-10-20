@@ -605,6 +605,21 @@ describe("Duration", () => {
     deepStrictEqual(Duration.nanos(1_000_000_001n).pipe(Duration.toHrTime), [1, 1])
     deepStrictEqual(Duration.millis(1001).pipe(Duration.toHrTime), [1, 1_000_000])
     deepStrictEqual(Duration.infinity.pipe(Duration.toHrTime), [Infinity, 0])
+    // Nanoseconds stay in 0..999_999_999; a negative duration borrows from seconds.
+    deepStrictEqual(Duration.zero.pipe(Duration.toHrTime), [0, 0])
+    deepStrictEqual(Duration.seconds(-1).pipe(Duration.toHrTime), [-1, 0])
+    deepStrictEqual(Duration.millis(-1).pipe(Duration.toHrTime), [-1, 999_000_000])
+    deepStrictEqual(Duration.millis(-1500).pipe(Duration.toHrTime), [-2, 500_000_000])
+    deepStrictEqual(Duration.nanos(-1n).pipe(Duration.toHrTime), [-1, 999_999_999])
+    deepStrictEqual(Duration.nanos(-1_000_000_001n).pipe(Duration.toHrTime), [-2, 999_999_999])
+    assertTrue(Equal.equals(
+      Duration.fromInputUnsafe(Duration.toHrTime(Duration.millis(-1500))),
+      Duration.millis(-1500)
+    ))
+    assertTrue(Equal.equals(
+      Duration.fromInputUnsafe(Duration.toHrTime(Duration.nanos(-1n))),
+      Duration.nanos(-1n)
+    ))
   })
 
   it("negative values", () => {

@@ -83,12 +83,14 @@ const fromMillisString = (input: string, scale: number): Duration => {
 }
 
 const nanosToHrTime = (nanos: bigint): [seconds: number, nanos: number] => {
-  const sign = nanos < bigint0 ? -bigint1 : bigint1
-  const absolute = nanos < bigint0 ? -nanos : nanos
-  return [
-    Number(sign * (absolute / bigint1e9)),
-    Number(sign * (absolute % bigint1e9))
-  ]
+  let seconds = nanos / bigint1e9
+  let rest = nanos % bigint1e9
+  // BigInt division truncates toward zero, so a negative remainder must borrow.
+  if (rest < bigint0) {
+    rest += bigint1e9
+    seconds -= bigint1
+  }
+  return [Number(seconds), Number(rest)]
 }
 
 /**
@@ -1062,12 +1064,19 @@ export const toNanos: (self: Input) => Option.Option<bigint> = Option.liftThrowa
 /**
  * Converts a Duration to high-resolution time format [seconds, nanoseconds].
  *
+ * **Details**
+ *
+ * The nanosecond component is always from `0` through `999_999_999`. A
+ * negative duration carries the sign on the seconds component, so one
+ * millisecond before zero is `[-1, 999_000_000]`.
+ *
  * **Example** (Converting durations to high-resolution time)
  *
  * ```ts import.meta.vitest
  * import { Duration } from "effect"
  *
  * Duration.toHrTime(Duration.millis(1500)) // => [1, 500_000_000]
+ * Duration.toHrTime(Duration.millis(-1)) // => [-1, 999_000_000]
  * ```
  *
  * @stability stable
